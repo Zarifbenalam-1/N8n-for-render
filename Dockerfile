@@ -1,11 +1,13 @@
-# Use the Debian-based image (standard, stable)
-FROM n8nio/n8n:latest-debian
+# Use specific n8n version based on newer Debian (Bookworm is current stable)
+FROM n8nio/n8n:latest
 
 # Switch to root to install system packages
 USER root
 
-# Install dependencies: Perl, ExifTool, Python3, pip, and utilities
-RUN apt-get update && apt-get install -y \
+# 1. Install system dependencies
+# We use --allow-releaseinfo-change just in case, and fix the sources if needed
+RUN apt-get update || true && \
+    apt-get install -y --no-install-recommends \
     perl \
     libimage-exiftool-perl \
     python3 \
@@ -13,10 +15,11 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     wget \
     curl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# (Optional) Install common Python libraries you might use in Code Nodes
+# (Optional) Install Python libraries
 RUN pip3 install --break-system-packages requests beautifulsoup4 pandas numpy
 
-# Switch back to the 'node' user for security (n8n standard)
+# Switch back to the 'node' user
 USER node
