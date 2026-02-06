@@ -27,7 +27,9 @@ USER node
 # Set environment variables
 ENV NODE_ENV=production
 ENV N8N_PORT=5678
-
+# Add these above your CMD ["n8n", "start"]
+ENV N8N_BLOCK_EXTERNAL_STORAGE_ACCESS=false
+ENV N8N_PYTHON_INTERPRETER=/usr/bin/python3
 # Expose the port
 EXPOSE 5678
 
