@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: n8n-custom
+    runtime: docker
+    plan: free
+    region: singapore # Closest to Bangladesh
+    envVars:
+      - key: N8N_PORT
+        value: 5678
+      
+      # --- AUTHENTICATION ---
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: true
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      - key: N8N_BASIC_AUTH_PASSWORD
+        generateValue: true # Check Render dashboard for this value after deploy
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      
+      
+      # --- DATABASE (SUPABASE CONNECTION) ---
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        value: aws-1-ap-southeast-2.pooler.supabase.com
+      - key: DB_POSTGRESDB_PORT
+        value: 5432
+      - key: DB_POSTGRESDB_DATABASE
+        value: postgres
+      - key: DB_POSTGRESDB_USER
+        value: postgres.rosgcmswdwffwjrnsyxh
+      - key: DB_POSTGRESDB_PASSWORD
+        value: Zarif@2005@2008 # Replace this with your actual password before pushing, OR set manually in Render Dashboard for security
+      
+      # --- SCHEMA (Where n8n stores data) ---
+      - key: DB_POSTGRESDB_SCHEMA
+        value: n8n_render
+
+      # --- PERFORMANCE FOR FREE TIER ---
+      - key: N8N_DEFAULT_BINARY_DATA_MODE
+        value: filesystem
+      - key: EXECUTIONS_DATA_PRUNE
+        value: true
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: 336 # Keep logs for 14 days (in hours)
+      - key: EXECUTIONS_DATA_PRUNE_MAX_COUNT
+        value: 1000 # Keep max 1000 executions to save DB space
