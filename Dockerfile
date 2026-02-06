@@ -1,21 +1,26 @@
-# Use the official standard n8n image (Alpine based)
-# This tag DEFINITELY exists and Render can find it.
-FROM n8nio/n8n:latest
+# Use the alpine-specific tag which includes the apk package manager
+FROM n8nio/n8n:latest-alpine
 
-# Switch to root to install packages
+# Switch to root to install system packages
 USER root
 
-# Install Perl, ExifTool, and Python3 using Alpine's package manager (apk)
-RUN apk add --no-cache \
+# 1. Install Python, Perl (for ExifTool), and pre-compiled data science libraries
+# We use APK for everything to avoid slow 'pip' compilation on Render's free tier
+RUN apk add --no-cache --update \
     perl \
     exiftool \
     python3 \
     py3-pip \
+    py3-pandas \
+    py3-numpy \
+    py3-requests \
+    py3-beautifulsoup4 \
+    wget \
     curl \
-    wget
+    ca-certificates
 
-# Install Python libraries (using --break-system-packages for Alpine 3.19+)
-RUN pip3 install --break-system-packages requests beautifulsoup4 pandas numpy
+# 2. (Optional) Small pure-python libraries can be added here
+# RUN pip3 install --break-system-packages library-name
 
-# Switch back to n8n user
+# Switch back to the 'node' user for security
 USER node
