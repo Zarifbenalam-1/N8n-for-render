@@ -1,13 +1,15 @@
 # Start from a standard Node.js image (Debian Bookworm)
 FROM node:20-bookworm
 
-# 1. Install System Dependencies (Root User)
-# We add 'python3-full' to ensure we have the complete Python standard library
+# 1. Install System Dependencies (ROOT MODE)
+# We stay as root to install apt packages and n8n globally
+USER root
 RUN apt-get update && apt-get install -y \
     perl \
     libimage-exiftool-perl \
     python3-full \
     python3-pip \
+    python3-venv \
     graphicsmagick \
     git \
     wget \
@@ -17,14 +19,25 @@ RUN apt-get update && apt-get install -y \
     fonts-freefont-ttf \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Configure Browser Variables (For Puppeteer)
+# 2. Configure Browser Variables
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# 3. Install Python Libraries GLOBALLY
-# We use '--break-system-packages' because we are in a container and WANT to
-# install these into the system python. This makes them available to all users.
-RUN pip3 install --break-system-packages \
+# 3. Install n8n globally (Root is needed for global npm install)
+RUN npm install -g n8n puppeteer
+
+# 4. Create Directory & Switch to User (USER MODE STARTS HERE)
+# We ensure the home directory exists and is owned by 'node'
+RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node
+USER node
+
+# 5. Create Virtual Environment & Install Libraries
+# Since we are now 'USER node', this venv will be owned by 'node'.
+# No permission errors. No root warnings.
+RUN python3 -m venv /home/node/python_env
+
+# Install libraries specifically into this virtual environment
+RUN /home/node/python_env/bin/pip install \
     pandas \
     numpy \
     requests \
@@ -32,22 +45,13 @@ RUN pip3 install --break-system-packages \
     selenium \
     webdriver-manager
 
-# 4. Install n8n and Puppeteer globally
-RUN npm install -g n8n puppeteer
-
-# 5. Create the 'node' user directory setup
-RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node/.n8n
-
-# Switch to non-root user for security
-USER node
-
 # --- ENV VARS ---
 ENV NODE_ENV=production
 ENV N8N_PORT=5678
 ENV N8N_BLOCK_EXTERNAL_STORAGE_ACCESS=false
 
-# CRITICAL FIX: Point directly to the system python we just configured
-ENV N8N_PYTHON_INTERPRETER=/usr/bin/python3
+# 6. Point n8n to the USER-OWNED Python environment
+ENV N8N_PYTHON_INTERPRETER=/home/node/python_env/bin/python
 
 # Expose the port
 EXPOSE 5678
