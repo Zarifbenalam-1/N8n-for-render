@@ -1,29 +1,21 @@
-FROM n8nio/n8n:latest
+# Use the official Ubuntu-based image from n8n
+# "latest-ubuntu" is the standard tag for non-Alpine builds now
+FROM n8nio/n8n:latest-ubuntu
 
-# Switch to root to install system packages
 USER root
 
-# 1. Install system dependencies and Python packages via APK
-# "apt-get" is replaced with "apk". 
-# We install py3-numpy and py3-pandas from the Alpine repo to avoid 
-# compiling them from source (which would likely timeout on Render).
-RUN apk add --update --no-cache \
+# Install dependencies (apt-get works here because it is Ubuntu)
+RUN apt-get update && apt-get install -y \
     perl \
-    exiftool \
+    libimage-exiftool-perl \
     python3 \
-    py3-pip \
-    py3-pandas \
-    py3-numpy \
-    py3-requests \
-    py3-beautifulsoup4 \
+    python3-pip \
+    python3-venv \
     wget \
     curl \
-    ca-certificates
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. (Optional) Install other pure-Python libraries via pip
-# Only use this for small libraries not available in apk.
-# We use --break-system-packages because Alpine manages python externally.
-# RUN pip3 install --break-system-packages some-other-library
+# Install Python libraries
+RUN pip3 install --break-system-packages requests beautifulsoup4 pandas numpy
 
-# Switch back to the 'node' user
 USER node
