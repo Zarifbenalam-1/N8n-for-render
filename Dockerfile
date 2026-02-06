@@ -1,26 +1,35 @@
-# Use the alpine-specific tag which includes the apk package manager
-FROM n8nio/n8n:latest-alpine
+# Start from a standard Node.js image (Debian Bookworm)
+# This guarantees we have 'apt-get' and a full OS
+FROM node:20-bookworm
 
-# Switch to root to install system packages
-USER root
-
-# 1. Install Python, Perl (for ExifTool), and pre-compiled data science libraries
-# We use APK for everything to avoid slow 'pip' compilation on Render's free tier
-RUN apk add --no-cache --update \
+# Install system dependencies (Root user is default here)
+RUN apt-get update && apt-get install -y \
     perl \
-    exiftool \
+    libimage-exiftool-perl \
     python3 \
-    py3-pip \
-    py3-pandas \
-    py3-numpy \
-    py3-requests \
-    py3-beautifulsoup4 \
+    python3-pip \
+    python3-venv \
+    graphicsmagick \
+    git \
     wget \
     curl \
-    ca-certificates
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. (Optional) Small pure-python libraries can be added here
-# RUN pip3 install --break-system-packages library-name
+# Install n8n globally via npm
+RUN npm install -g n8n
 
-# Switch back to the 'node' user for security
+# Create a user 'node' (if not exists) and setup directories
+RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node/.n8n
+
+# Switch to non-root user
 USER node
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV N8N_PORT=5678
+
+# Expose the port
+EXPOSE 5678
+
+# Start n8n
+CMD ["n8n", "start"]
