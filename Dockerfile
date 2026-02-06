@@ -1,26 +1,29 @@
-# Use the specific version that is guaranteed to be Debian-based
-# We avoid 'latest' because it defaults to Alpine
-FROM n8nio/n8n:1.77.2-debian
+FROM n8nio/n8n:latest
 
-# Switch to root
+# Switch to root to install system packages
 USER root
 
-# Update sources and install dependencies
-# We add "|| true" to update to prevent failure on minor repo issues
-RUN apt-get update || true && \
-    apt-get install -y --no-install-recommends \
+# 1. Install system dependencies and Python packages via APK
+# "apt-get" is replaced with "apk". 
+# We install py3-numpy and py3-pandas from the Alpine repo to avoid 
+# compiling them from source (which would likely timeout on Render).
+RUN apk add --update --no-cache \
     perl \
-    libimage-exiftool-perl \
+    exiftool \
     python3 \
-    python3-pip \
-    python3-venv \
+    py3-pip \
+    py3-pandas \
+    py3-numpy \
+    py3-requests \
+    py3-beautifulsoup4 \
     wget \
     curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates
 
-# Install Python libraries
-RUN pip3 install --break-system-packages requests beautifulsoup4 pandas numpy
+# 2. (Optional) Install other pure-Python libraries via pip
+# Only use this for small libraries not available in apk.
+# We use --break-system-packages because Alpine manages python externally.
+# RUN pip3 install --break-system-packages some-other-library
 
-# Switch back to node user
+# Switch back to the 'node' user
 USER node
